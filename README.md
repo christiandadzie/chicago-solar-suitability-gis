@@ -1,8 +1,8 @@
 # Targeting Solar Where It Matters: A GIS Suitability Analysis for Chicago
 
-Chicago is one of the most residentially segregated cities in the United States. That segregation shows up in a lot of ways, including energy. This project asks a direct question: where should the city prioritize solar installation to deliver the most benefit to the communities that need it most?
+Chicago is one of the most residentially segregated cities in the United States. That segregation shows up in energy too. This project asks a direct question: where should the city prioritize solar installation to deliver the most benefit to communities that need it most?
 
-*Christian Dadzie | Yale School of the Environment, ENV 756: Data Automation | Fall 2024*
+*Christian Dadzie | Yale School of the Environment, Modeling Geographic Objects | Fall 2024*
 
 ---
 
@@ -18,19 +18,19 @@ The analysis was structured around three sequential questions:
 
 ## What the Data Showed
 
-**Energy demand does not map onto disadvantage.** Using utility data from the Chicago Data Portal, I built a Composite Energy Demand Index that weighted electricity consumption at 60% and gas consumption at 40%, then normalized both to a 0 to 100 scale. The resulting index placed eastern and northern neighborhoods at the top, areas that tend to be wealthier and predominantly white. The highest-demand community had over 1.1 million kWh per square foot. The index mean was 3.06, but the median was only 0.67, which tells you how skewed the distribution is.
+Mapping electricity and gas consumption across all 77 community areas revealed something worth paying attention to: the neighborhoods with the highest energy demand tend to be wealthier and commercially dense, clustered in the east and north of the city. A model that simply chased demand would direct solar investment toward areas that already have the most resources.
 
-This finding shapes everything that follows. High energy consumption is partly a sign of economic activity and dense commercial infrastructure. The communities with the greatest equity need often have *lower* measured demand, not higher. A purely demand-driven targeting model would systematically miss underserved populations.
+The more useful question is where energy burden and demographic vulnerability overlap. Cross-referencing consumption data with CMAP hardship and demographic indicators narrowed the field to 14 community areas where both conditions are present. From those, six rose to the top: Belmont Cragin, Humboldt Park, Brighton Park, Gage Park, Chicago Lawn, and Auburn Gresham.
 
-**The socioeconomic overlay changed the picture.** Cross-referencing the energy data with Chicago Metropolitan Agency for Planning (CMAP) demographic data, I identified community areas where over 79% of residents identify as non-white and where the hardship index sits above the city's moderate threshold. That filter produced 14 community areas with meaningful overlap between energy demand and concentrated disadvantage. Six rose to the top: Belmont Cragin, Humboldt Park, Brighton Park, Gage Park, Chicago Lawn, and Auburn Gresham.
+Both the manual analysis and the automated model pointed to the same conclusion. Belmont Cragin is a large, predominantly Latino community on Chicago's northwest side with an above-average energy burden and available land for planned development. Both analyses pointed there independently.
 
 ---
 
 ## The Methodology
 
-**Data Interpretation Analysis**
+**Data Interpretation**
 
-To rank the six priority communities, I built a composite scoring formula that weights three factors:
+To rank the six priority communities, I built a composite score weighting three factors:
 
 - Shape area (50%) as a proxy for installation capacity
 - Population-weighted Hardship Index (30%) to capture concentrated need at scale
@@ -39,55 +39,37 @@ To rank the six priority communities, I built a composite scoring formula that w
 This produced a final ranked list:
 
 | Rank | Community Area |
-|------|---------------|
-| 1 | Belmont Cragin |
-| 2 | Auburn Gresham |
-| 3 | Humboldt Park |
-| 4 | Chicago Lawn |
-| 5 | Brighton Park |
-| 6 | Gage Park |
-
-Belmont Cragin led on all three dimensions: it is large, it has a high population-hardship product, and it registers above-average energy demand for a predominantly residential area. Final score: 56,103,518.
+|------|----------------|
+| 1    | Belmont Cragin |
+| 2    | Auburn Gresham |
+| 3    | Humboldt Park  |
+| 4    | Chicago Lawn   |
+| 5    | Brighton Park  |
+| 6    | Gage Park      |
 
 ---
 
-## The Automation Model
+**Automation Model**
 
-For the second phase of the project, I built a full automation pipeline in ArcGIS Pro ModelBuilder to replicate the analysis with a repeatable, adjustable workflow.
+For the second phase, I rebuilt the entire analysis as a parameterized pipeline in ArcGIS Pro ModelBuilder so the same framework can be rerun with updated data or applied to a different city.
 
-The pipeline is structured as a supermodel composed of three distinct submodels:
+The pipeline is a supermodel composed of three submodels:
 
-**Submodel 1: Energy Demand**
-Ingests raw electricity and gas consumption layers, normalizes them, and applies the 60/40 weighting to produce the Composite Demand Index. An escalation factor of 0.17 adjusts for baseline load differences across community types.
+**Submodel 1: Energy Demand** ingests raw electricity and gas consumption layers, normalizes them, and applies a 60/40 weighting to produce the Composite Demand Index.
 
-**Submodel 2: Socioeconomic Overlay**
-Calculates a Population-Weighted Hardship Index by multiplying the Hardship Index by total population in each community. An escalation factor of 1.35 amplifies the signal in the most vulnerable areas. The submodel flags community areas where non-white population and hardship both exceed thresholds (mean values: 73% non-white, hardship score 1,563,272).
+**Submodel 2: Socioeconomic Overlay** calculates a Population-Weighted Hardship Index and flags community areas where non-white population and hardship both exceed city thresholds.
 
-**Submodel 3: Land Use and Efficiency**
-Uses an iterator to step through land use categories and assess development viability for each. Outputs four scored layers corresponding to land use types, which are then joined to the energy and socioeconomic outputs in the supermodel.
+**Submodel 3: Land Use and Efficiency** steps through land use categories to assess development viability, producing scored layers that feed into the final supermodel output.
 
-**Final scoring formula:**
-
-```
-TotalScore = (Shape_Area × 0.50) + (Pop_HardIx × 0.30) + (Comp_Index × 0.20)
-```
-
-The model ran end-to-end in 38 seconds, processing all 14 steps without interruption.
-
-**Supermodel results:**
-
-- Belmont Cragin (Planned Development land use): score 1,553,811
-- Gage Park (Open/Residential land use): score 970,585
-
-Both sites were recommended for Solar PV installation.
+Both Belmont Cragin and Gage Park were recommended for Solar PV installation.
 
 ---
 
 ## Conclusion
 
-Two independent analyses, one interpretive and one automated, pointed to the same place. Belmont Cragin is a large, predominantly Latino community on Chicago's northwest side with above-average energy burden, a high population-hardship product, and available land zoned for planned development. It meets every threshold the analysis was designed to surface.
+Two independent analyses, one manual and one automated, pointed to the same place.
 
-The broader lesson from the project is methodological: demand alone is not a good proxy for need. Any solar siting framework that chases high consumption will consistently favor wealthier, energy-intensive areas. Embedding equity metrics directly into the scoring formula shifts the outcome toward communities that stand to benefit the most but are least likely to attract private capital on their own.
+The broader takeaway is methodological. Demand alone is not a good proxy for need. A siting framework that chases high consumption will consistently favor energy-intensive, wealthier areas. Embedding equity metrics into the scoring shifts the outcome toward communities that stand to benefit most but are least likely to attract private solar investment on their own.
 
 ---
 
@@ -99,4 +81,4 @@ The broader lesson from the project is methodological: demand alone is not a goo
 - Chicago Data Portal: Community area energy benchmarking, community area boundaries
 - CMAP Data Portal: Hardship Index, demographic data by community area
 
-**Course:** ENV 756: Data Automation, Yale School of the Environment, Fall 2024
+**Course:** Modeling Geographic Objects, Yale School of the Environment, Fall 2024
